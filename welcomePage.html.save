@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Simple Map</title>
+        <meta name="viewport" content="initial-scale=1.0">
+        <meta charset="utf-8">
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #map {
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="map"></div>
+        <div id="output"></div>
+        <script>
+            var wsUri = "ws://52.88.238.35:9000/";
+            var marker;
+            var output;
+            var map;
+            var httpRequest;
+            var latitude = 19.2335;
+            var longitude = 72.8368;
+            var globalWebSocketArray={};
+            var userLastLocation;
+            function initMap() {
+                map = new google.maps.Map(document.getElementById('map'), {
+                    center: {lat: 19.2335, lng: 72.8368},
+                    zoom: 14
+                });
+                
+               // marker = new google.maps.Marker({position:{lat:19.000 , lng:19.111} , map: map});
+               // marker.setMap(map);
+                testWebSocket();
+            }
+
+            function updateMap(lat, lng,userName)
+            {
+                var flat = parseFloat(lat);
+                var flng = parseFloat(lng);
+                console.log(typeof(lat));
+                console.log(typeof(lng));
+                console.log(typeof(userName));
+                if(globalWebSocketArray[userName] != undefined)
+                {
+                     var panPoint = new google.maps.LatLng(flat, flng);
+                     globalWebSocketArray[userName].setPosition(panPoint);
+                }
+                else
+                {
+                     globalWebSocketArray[userName] = new google.maps.Marker({position:{lat:flat , lng:flng} , map: map , label:userName});
+                     var panPoint = new google.maps.LatLng(flat,flng);
+                     map.panTo(panPoint);
+
+                }
+                console.log(lat + " "+lng+" "+userName);
+                //map.panTo(panPoint);
+            }
+
+            function makeRequest(url) {
+                httpRequest = new XMLHttpRequest();
+
+                if (!httpRequest) {
+                    alert('Giving up :( Cannot create an XMLHTTP instance');
+                    return false;
+                }
+                httpRequest.onreadystatechange = alertContents;
+                httpRequest.open('GET', url);
+                httpRequest.send();
+            }
+
+            function alertContents() {
+                if (httpRequest.readyState === XMLHttpRequest.DONE) {
+                    if (httpRequest.status === 200) {
+                        alert(httpRequest.responseText);
+                        var latLong = httpRequest.responseText.split(",");
+                        updateMap(latLong[0], latLong[1],latLong[2]);
+                    } else {
+                        alert('the received co-ordinates are ');
+                    }
+                }
+            }
+
+            /*********************** websockets **********************/
+
+            function testWebSocket()
+            {
+                websocket = new WebSocket(wsUri, "echo-protocol");
+                websocket.onopen = function (evt) {
+                    onOpen(evt)
+                };
+                websocket.onclose = function (evt) {
+                    onClose(evt)
+                };
+                websocket.onmessage = function (evt) {
+                    onMessage(evt)
+                };
+                websocket.onerror = function (evt) {
+                    onError(evt)
+                };
+            }
+
+            function onOpen(evt)
+            {
+                writeToScreen("CONNECTED");
+                doSend(latitude+","+longitude);
+            }
+
+            function onClose(evt)
+            {
+                writeToScreen("DISCONNECTED");
+            }
+
+            function onMessage(evt)
+            {
+                //writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
+                //websocket.close();
+                var latLong = evt.data.split(",");
+                updateMap(latLong[0], latLong[1],latLong[2]);
+                console.log(evt.data);
+            }
+
+            function onError(evt)
+            {
+                writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+            }
+
+            function doSend(message)
+            {
+                writeToScreen("SENT: " + message);
+                websocket.send(message);
+            }
+
+            function writeToScreen(message)
+            {
+                var pre = document.createElement("p");
+                pre.style.wordWrap = "break-word";
+                pre.innerHTML = message;
+                document.getElementById("output").appendChild(pre);
+            }
+            
+            
+
+
+            /*********************** websockets end ********************/
+        function pantoUser()
+        {
+		var divid = document.getElementById("onlineppl");
+		
+    	}
+        </script>
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA6Pkq5btm-UDziXCWbSirk0bUQy7tAxwA&callback=initMap"
+        async defer></script>
+        <select id="onlineppl" onchange="pantoUser()">
+		
+	</select>
+    </body>
+</html>
