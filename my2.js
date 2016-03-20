@@ -1,34 +1,46 @@
 #!/usr/bin/env node
 var WebSocketServer = require('websocket').server;
 var http = require('http');
-var url = require('url') ;
+var url = require('url');
 var fs = require('fs');
 var qs = require('querystring');
 
 var globalWebSocketArray;
-
-var server = http.createServer(function(request, response) {
+var globalWebSocketMap; // key = email/UserId and value is the websocket object
+var server = http.createServer(function (request, response) {
     console.log((new Date()) + ' Received request for ' + request.url);
     var trackIndex = request.url.indexOf("track");
-    if(request.method == 'POST')
+    if (request.method == 'POST')
     {
-        var body="";
-        request.on('data',function(data)
+        var body = "";
+        request.on('data', function (data)
         {
             console.log(data);
             body += data;
         });
-        request.on('end',function(){
+        request.on('end', function () {
             var post = qs.parse(body);
             console.log(body);
             var localJson = JSON.parse(body);
             console.log(localJson);
             console.log(localJson['userName']);
-            for(var i = 0 ; i<globalArray.length ; i++)
+
+            /****
+             * Create a SQL COnnection fetch the user and update the database
+             * 
+             * also fetch other ppl from the group 
+             * 
+             * get their sockets and send it to them 
+             * 
+             * you will have to create a global array of websockets to keep a track of all the clients
+             * 
+             * 
+             */
+            for (var i = 0; i < globalArray.length; i++)
             {
 
-                var msg = localJson.lat +","+localJson.lng+","+localJson.userName;
-                console.log("sending it to socket "+i);
+                var msg = localJson.lat + "," + localJson.lng + "," + localJson.userName;
+                console.log("sending it to socket " + i);
                 globalArray[i].sendUTF(msg);
 
             }
@@ -38,38 +50,68 @@ var server = http.createServer(function(request, response) {
     }
     else
     {
-        if(trackIndex>=0) // if the request has track lat and lng as query parameters
+        if (trackIndex >= 0) // if the request has track lat and lng as query parameters
         {
-            var queryObject = url.parse(request.url,true).query;
+            var queryObject = url.parse(request.url, true).query;
             console.log(queryObject);
-            for(var i = 0 ; i<globalArray.length ; i++)
+            for (var i = 0; i < globalArray.length; i++)
             {
-                  
-                var msg = queryObject.lat +","+queryObject.lng; 
-                console.log("sending it to socket "+i);
-                globalArray[i].sendUTF(msg);        
-             
+
+                var msg = queryObject.lat + "," + queryObject.lng;
+                console.log("sending it to socket " + i);
+                globalArray[i].sendUTF(msg);
+
             }
-	    response.end(msg);
+            response.end(msg);
         }
         else
         {
-        
-             response.setHeader("Content-type","text/html");
-             response.setHeader("Access-Control-Allow-Origin", "*");
-             response.setHeader("Access-Control-Allow-Headers", "X-Requested-With");
-             fs.readFile("./welcomePage.html",function(err,data){
-                console.log(data);
-                response.end(data);
+
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Headers", "X-Requested-With");
+
+            console.log("************************************************"+request.url);
+            if (request.url.endsWith('.css') )
+            {
+                response.setHeader("Content-type", "text/css");
+                fs.readFile("."+request.url, function (err, data) {
+                    console.log(data);
+                    response.end(""+data);
+                });
+            }
+            else if(request.url.endsWith('.js'))
+            {
+                response.setHeader("Content-type", "text/javascript");
+                fs.readFile("."+request.url, function (err, data) {
+                    console.log(data);
+                    response.end(""+data);
+                });
+            }
+            else if(request.url.endsWith('.map'))
+            {
+                response.setHeader("Content-type", "application/json");
                 
-             });
-        
-        
+                fs.readFile("."+request.url, function (err, data) {
+                    console.log("MMMMMAAAAAAAPPPPPPPPP >>>>>> "+data);
+                    response.end(""+data);
+                });
+            }
+            else
+            {
+                response.setHeader("Content-type", "text/html");
+
+                fs.readFile("./Login.html", function (err, data) {
+                    console.log(data);
+                    response.end(data);
+
+                });
+            }
+
         }
     }
     response.writeHead(200);
 });
-server.listen(9000, function() {
+server.listen(9000, function () {
     console.log((new Date()) + ' Server is listening on port 9000');
 });
 
@@ -84,38 +126,39 @@ wsServer = new WebSocketServer({
 });
 
 function originIsAllowed(origin) {
-  // put logic here to detect whether the specified origin is allowed.
-  return true;
+    // put logic here to detect whether the specified origin is allowed.
+    return true;
 }
 
 globalArray = [];
 
+
 function removeSocket(soc)
 {
     var index = globalArray.indexOf(soc);
-    if(index>=0)
+    if (index >= 0)
     {
-        globalArray.splice(index,1);
+        globalArray.splice(index, 1);
         console.log("socket removed successfully...");
     }
 }
 
-wsServer.on('request', function(request) {
-   
+wsServer.on('request', function (request) {
+
 
     var connection = request.accept('echo-protocol', request.origin);
     globalArray.push(connection);
     console.log((new Date()) + ' Connection accepted.');
-    connection.on('message', function(message) {
+    connection.on('message', function (message) {
         if (message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);     
-            for(var i = 0 ; i<globalArray.length ; i++)
+            console.log('Received Message: ' + message.utf8Data);
+            for (var i = 0; i < globalArray.length; i++)
             {
-                
-                if(globalArray[i]!=connection)
+
+                if (globalArray[i] != connection)
                 {
-                    console.log("sending it to socket "+i);
-                    globalArray[i].sendUTF(message.utf8Data);        
+                    console.log("sending it to socket " + i);
+                    globalArray[i].sendUTF(message.utf8Data);
                 }
             }
             //connection.sendUTF(message.utf8Data);
@@ -125,7 +168,7 @@ wsServer.on('request', function(request) {
             connection.sendBytes(message.binaryData);
         }
     });
-    connection.on('close', function(reasonCode, description) {
+    connection.on('close', function (reasonCode, description) {
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
         removeSocket(connection);
     });
