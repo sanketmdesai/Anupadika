@@ -4,6 +4,17 @@ var http = require('http');
 var url = require('url');
 var fs = require('fs');
 var qs = require('querystring');
+var mysql = require('mysql');
+
+var connectionPool = mysql.createPool(
+        {
+            connectionLimit : 100,
+            host : 'localhost',
+            user : 'root',
+            password : 'root',
+            database : 'trackingApp',
+            debug : false,
+        });
 
 var globalWebSocketArray;
 var globalWebSocketMap; // key = email/UserId and value is the websocket object
@@ -75,7 +86,6 @@ var server = http.createServer(function (request, response) {
             {
                 response.setHeader("Content-type", "text/css");
                 fs.readFile("."+request.url, function (err, data) {
-                    console.log(data);
                     response.end(""+data);
                 });
             }
@@ -83,7 +93,6 @@ var server = http.createServer(function (request, response) {
             {
                 response.setHeader("Content-type", "text/javascript");
                 fs.readFile("."+request.url, function (err, data) {
-                    console.log(data);
                     response.end(""+data);
                 });
             }
@@ -92,16 +101,70 @@ var server = http.createServer(function (request, response) {
                 response.setHeader("Content-type", "application/json");
                 
                 fs.readFile("."+request.url, function (err, data) {
-                    console.log("MMMMMAAAAAAAPPPPPPPPP >>>>>> "+data);
                     response.end(""+data);
                 });
+            }
+            else if(request.url.indexOf("loginrequest")>= 0)
+            {
+                var queryObj = url.parse(request.url , true ).query;
+                console.log(queryObj.EmailId);
+                console.log(queryObj.PassWd);
+                
+                connectionPool.getConnection(function(err,connection){
+                    if(err)
+                    {
+                        connection.release();
+                        response.end("no connection pool possible coz of error");
+                        return;
+                    }
+                    
+                    console.log("connected as id "+connection.threadId);
+                    
+                    var loginQuery = "select * from Users where EmailId like '"+queryObj.EmailId+"' and password like '"+queryObj.PassWd+"'";
+                    var resultString = "";
+                    connection.query(loginQuery,function(err,rows){
+                        if(rows.length >=1)
+                        {
+//                            response.end("Login Successfull for "+rows[0].UserName);
+                            resultString = "Login Successfull for "+rows[0].UserName;
+                            
+                        }
+                        else
+                        {
+                            response.end("Login FAILED for "+JSON.stringify(rows));
+                            return;
+                        }
+                        var sqlQuery = "select GroupName from Groups where GroupId in ( select GroupId from User_Group_Relation where UserId in ( (select UserId from Users where EmailId like '"+queryObj.EmailId+"')))";
+                    
+                        connection.query(sqlQuery,function(err , rows){
+                        if(err)
+                        {
+                            response.end("no connection pool possible coz of error");
+                            return ;
+                        }
+                        
+                        var result = "";
+                        for(var i=0 ; i<rows.length ; i++)
+                        {
+                            result += JSON.stringify(rows[i]);
+                        }
+                        
+                        response.end(resultString+JSON.stringify(rows));
+                        return;
+                    });
+                    });
+                    
+                    
+                    
+                });
+                
+                
             }
             else
             {
                 response.setHeader("Content-type", "text/html");
 
                 fs.readFile("./Login.html", function (err, data) {
-                    console.log(data);
                     response.end(data);
 
                 });
