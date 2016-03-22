@@ -31,10 +31,12 @@ var server = http.createServer(function (request, response) {
         });
         request.on('end', function () {
             var post = qs.parse(body);
-            console.log(body);
+            console.log("body received on end of the request " + body);
             var localJson = JSON.parse(body);
             console.log(localJson);
             console.log(localJson['userName']);
+            console.log(localJson['EmailId']);
+
 
             /****
              * Create a SQL COnnection fetch the user and update the database
@@ -47,6 +49,38 @@ var server = http.createServer(function (request, response) {
              * 
              * 
              */
+
+            if (request.url.indexOf("fetchgroup") >= 0)
+            {
+                connectionPool.getConnection(function (err, connection) {
+
+                    var sqlQuery = "select GroupName from Groups where GroupId in ( select GroupId from User_Group_Relation where UserId in ( (select UserId from Users where EmailId like '" + localJson['EmailId'] + "')))";
+
+                    connection.query(sqlQuery, function (err, rows) {
+                        if (err)
+                        {
+                            response.end("no connection pool possible coz of error");
+                            return;
+                        }
+
+                        var result = "";
+                        for (var i = 0; i < rows.length; i++)
+                        {
+                            result += JSON.stringify(rows[i]);
+                        }
+
+                        response.end(JSON.stringify(rows));
+                        return;
+                    });
+                });
+                return;
+                //localJson["EmailId"];
+            }
+            else if (request.url.indexOf("fetchgroupmembers") >= 0)
+            {
+
+            }
+
             for (var i = 0; i < globalArray.length; i++)
             {
 
@@ -127,37 +161,22 @@ var server = http.createServer(function (request, response) {
                         {
 //                            response.end("Login Successfull for "+rows[0].UserName);
                             resultString = "Login Successfull for " + rows[0].UserName;
-                           // response.setHeader("Content-type", "text/html");
+                            // response.setHeader("Content-type", "text/html");
 
                             fs.readFile("./welcomePage.html", function (err, data) {
                                 response.end("" + data);
                             });
+                            connection.release();
                             return;
 
                         }
                         else
                         {
                             response.end("Login FAILED for " + JSON.stringify(rows));
+                            connection.release();
                             return;
                         }
-                        var sqlQuery = "select GroupName from Groups where GroupId in ( select GroupId from User_Group_Relation where UserId in ( (select UserId from Users where EmailId like '" + queryObj.EmailId + "')))";
 
-                        connection.query(sqlQuery, function (err, rows) {
-                            if (err)
-                            {
-                                response.end("no connection pool possible coz of error");
-                                return;
-                            }
-
-                            var result = "";
-                            for (var i = 0; i < rows.length; i++)
-                            {
-                                result += JSON.stringify(rows[i]);
-                            }
-
-                            response.end(resultString + JSON.stringify(rows));
-                            return;
-                        });
                     });
 
 
@@ -169,7 +188,7 @@ var server = http.createServer(function (request, response) {
             else
             {
                 response.setHeader("Content-type", "text/html");
-
+                console.log("Sending login page");
                 fs.readFile("./Login.html", function (err, data) {
                     response.end(data);
 
