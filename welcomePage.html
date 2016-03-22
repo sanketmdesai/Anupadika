@@ -4,6 +4,17 @@
         <title>Simple Map</title>
         <meta name="viewport" content="initial-scale=1.0">
         <meta charset="utf-8">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.2/jquery.min.js"></script> 
+        <!-- Latest compiled and minified CSS -->
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous"/>
+
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+        <link href="libraries/bootstrap/dist/css/bootstrap-material-design.min.css" rel="stylesheet" />
+        <link href="libraries/bootstrap/dist/css/ripples.min.css" rel="stylesheet" />
+        <script src="libraries/bootstrap/dist/js/material.min.js" type="text/javascript"></script>
+        <script src="libraries/bootstrap/dist/js/ripples.min.js" type="text/javascript"></script>
         <style>
             html, body {
                 height: 100%;
@@ -11,13 +22,31 @@
                 padding: 0;
             }
             #map {
-                height: 80%;
+                height: 350px;
+                width: 100%;
             }
         </style>
     </head>
     <body>
-        <div id="map"></div>
-        <div id="output"></div>
+        <div class="container">
+            <div class="row">
+                
+                <div class="col-md-12">
+                    <div class="well bs-component">
+                        <div id="map"></div>
+                    </div>
+                </div>
+            </div>
+             <div class="row">
+                
+                <div class="col-md-12">
+                    <div class="well bs-component">
+                        <div id="output"></div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
         <script>
             var wsUri = "ws://localhost:9000/";
             var marker;
@@ -26,39 +55,39 @@
             var httpRequest;
             var latitude = 19.2335;
             var longitude = 72.8368;
-            var globalWebSocketArray={};
+            var globalWebSocketArray = {};
             var userLastLocation;
             function initMap() {
                 map = new google.maps.Map(document.getElementById('map'), {
                     center: {lat: 19.2335, lng: 72.8368},
                     zoom: 14
                 });
-                
-               // marker = new google.maps.Marker({position:{lat:19.000 , lng:19.111} , map: map});
-               // marker.setMap(map);
+
+                // marker = new google.maps.Marker({position:{lat:19.000 , lng:19.111} , map: map});
+                // marker.setMap(map);
                 testWebSocket();
             }
 
-            function updateMap(lat, lng,userName)
+            function updateMap(lat, lng, userName)
             {
                 var flat = parseFloat(lat);
                 var flng = parseFloat(lng);
-                console.log(typeof(lat));
-                console.log(typeof(lng));
-                console.log(typeof(userName));
-                if(globalWebSocketArray[userName] != undefined)
+                console.log(typeof (lat));
+                console.log(typeof (lng));
+                console.log(typeof (userName));
+                if (globalWebSocketArray[userName] != undefined)
                 {
-                     var panPoint = new google.maps.LatLng(flat, flng);
-                     globalWebSocketArray[userName].setPosition(panPoint);
+                    var panPoint = new google.maps.LatLng(flat, flng);
+                    globalWebSocketArray[userName].setPosition(panPoint);
                 }
                 else
                 {
-                     globalWebSocketArray[userName] = new google.maps.Marker({position:{lat:flat , lng:flng} , map: map , label:userName});
-                     var panPoint = new google.maps.LatLng(flat,flng);
-                     map.panTo(panPoint);
+                    globalWebSocketArray[userName] = new google.maps.Marker({position: {lat: flat, lng: flng}, map: map, label: userName});
+                    var panPoint = new google.maps.LatLng(flat, flng);
+                    map.panTo(panPoint);
 
                 }
-                console.log(lat + " "+lng+" "+userName);
+                console.log(lat + " " + lng + " " + userName);
                 //map.panTo(panPoint);
             }
 
@@ -79,7 +108,7 @@
                     if (httpRequest.status === 200) {
                         alert(httpRequest.responseText);
                         var latLong = httpRequest.responseText.split(",");
-                        updateMap(latLong[0], latLong[1],latLong[2]);
+                        updateMap(latLong[0], latLong[1], latLong[2]);
                     } else {
                         alert('the received co-ordinates are ');
                     }
@@ -108,7 +137,7 @@
             function onOpen(evt)
             {
                 writeToScreen("CONNECTED");
-                doSend(latitude+","+longitude);
+                doSend(latitude + "," + longitude);
             }
 
             function onClose(evt)
@@ -121,7 +150,7 @@
                 //writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
                 //websocket.close();
                 var latLong = evt.data.split(",");
-                updateMap(latLong[0], latLong[1],latLong[2]);
+                updateMap(latLong[0], latLong[1], latLong[2]);
                 console.log(evt.data);
             }
 
@@ -143,8 +172,8 @@
                 pre.innerHTML = message;
                 document.getElementById("output").appendChild(pre);
             }
-            
-            
+
+
 
 
             /*********************** websockets end ********************/
