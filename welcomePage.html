@@ -49,7 +49,7 @@
                     <div class="well bs-component">
                         <div id="output"></div>
                         <div id="groupselectdiv">
-                            <select id="groupsSelect">
+                            <select id="groupsSelect" onchange="updateGroupMembersHander()">
 
                             </select>
                         </div>
@@ -85,7 +85,7 @@
                 <div class="col-md-2"></div>
             </div>
 
-            <div class="row">
+            <div id="membersRow" class="row">
                 <div class="col-md-2">
 
                     <div class="panel panel-primary">
@@ -162,7 +162,7 @@
 
         </div>
         <script>
-            var wsUri = "ws://localhost:9000/";
+            var wsUri = "ws://52.88.238.35:9000/";
             var marker;
             var output;
             var map;
@@ -238,7 +238,7 @@
             {
                 var groupDropDown = document.getElementById("groupsSelect");
                 groupDropDown.innerHTML = "";
-                console.log("update groups called....");
+                console.log("update groups called...."+responseText);
 
                 var parsedData = JSON.parse(responseText);
                 for (var i = 0; i < parsedData.length; i++)
@@ -250,27 +250,88 @@
                     option.innerHTML = parsedData[i].GroupName;
                     groupDropDown.appendChild(option);
                 }
+                
+                alert("update groups "+groupDropDown.selectedIndex + " "+groupDropDown.value);
+                var EmailIdInput = document.getElementById("userEmailId");
+                makeRequest("http://52.88.238.35:9000/fetchmembersofgroup", '{"EmailId":"'+ EmailIdInput.value +'","GroupName":"'+ groupDropDown.value +'"}', updateGroupMembers);
             }
 
             function updateGroupMembers(responseText)
             {
-
+                console.log("------------------------------------ update group members");
+                console.log(responseText);
+                var memberRow = document.getElementById("membersRow");
+                memberRow.innerHTML = "";
+                var parsedData = JSON.parse(responseText)
+                for(var i=0;i<parsedData.length;i++)
+                {
+                    var panelContent = "";
+                    panelContent = panelContent + "EmailId : "+ parsedData[i].UserName+"<br>"; 
+                    panelContent = panelContent + "Lat : "+ parsedData[i].lat+"<br>"; 
+                    panelContent = panelContent + "Lng : "+ parsedData[i].lng+""; 
+                    var panelDiv = createDynamicPanel(parsedData[i].UserName,panelContent);
+                    memberRow.appendChild(panelDiv);
+                }
             }
 
             function updateUsersOnMap(responseText)
             {
-
+                
             }
 
             function fetchGroupHandler()
             {
                 var EmailIdInput = document.getElementById("userEmailId");
-                makeRequest("http://localhost:9000/fetchgroup", '{"EmailId":"' + EmailIdInput.value + '"}', updateGroups);
+                makeRequest("http://52.88.238.35:9000/fetchgroup", '{"EmailId":"' + EmailIdInput.value + '"}', updateGroups);
             }
             
-            function createDynamicPanel()
+            function updateGroupMembersHander()
             {
+                var groupDropDown = document.getElementById("groupsSelect");
+                var EmailIdInput = document.getElementById("userEmailId");
+                makeRequest("http://52.88.238.35:9000/fetchmembersofgroup", '{"EmailId":"'+ EmailIdInput.value +'","GroupName":"'+ groupDropDown.value +'"}', updateGroupMembers);
+            }
+            
+            function createDynamicPanel(title,content)
+            {
+                /*
+                 * 
+                 * <div class="col-md-2">
+                    <div class="panel panel-primary ">
+                        <div class="panel-heading">
+                            <h3 class="panel-title">Panel danger</h3>
+                        </div>
+                        <div class="panel-body">
+                            Panel content
+                        </div>
+                    </div>
+                </div>
+                 * 
+                 */
+//                var memberRow = document.getElementById("membersRow");
                 
+                var colDiv = document.createElement("div");
+                colDiv.setAttribute("class","col-md-2");
+                
+                var panelContainerDiv = document.createElement("div");
+                panelContainerDiv.setAttribute("class","panel panel-primary");
+                
+                var panelHeader = document.createElement("div");
+                panelHeader.setAttribute("class","panel-heading");
+                
+                var panelBody = document.createElement("div");
+                panelBody.setAttribute("class","panel-body");
+                panelBody.innerHTML = content;
+                
+                var panelTitle = document.createElement("h3");
+                panelTitle.setAttribute("class","panel-title");
+                panelTitle.innerHTML = title;
+                
+                panelHeader.appendChild(panelTitle);
+                panelContainerDiv.appendChild(panelHeader);
+                panelContainerDiv.appendChild(panelBody);
+                colDiv.appendChild(panelContainerDiv);
+                return colDiv;
             }
             /*********************** websockets **********************/
 
@@ -307,7 +368,7 @@
                 //writeToScreen('<span style="color: blue;">RESPONSE: ' + evt.data + '</span>');
                 //websocket.close();
                 var latLong = evt.data.split(",");
-                updateMap(latLong[0], latLong[1], latLong[2]);
+                //updateMap(latLong[0], latLong[1], latLong[2]);
                 console.log(evt.data);
             }
 

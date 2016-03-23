@@ -67,8 +67,9 @@ var server = http.createServer(function (request, response) {
                         for (var i = 0; i < rows.length; i++)
                         {
                             result += JSON.stringify(rows[i]);
+                            console.log(JSON.stringify(rows[i]));
                         }
-
+                        console.log(result);
                         response.end(JSON.stringify(rows));
                         return;
                     });
@@ -76,9 +77,49 @@ var server = http.createServer(function (request, response) {
                 return;
                 //localJson["EmailId"];
             }
-            else if (request.url.indexOf("fetchgroupmembers") >= 0)
+            else if (request.url.indexOf("fetchmembersofgroup") >= 0)
             {
+               
+                connectionPool.getConnection(function(err,connection){
+                    var sqlQuery =  "select * from Users where UserId in"+
+                                    "("+
+                                        "select UserId from User_Group_Relation where GroupId in "+
+                                        "("+ 
+                                            "select GroupId from"+ 
+                                            "("+
+                                                "select * from Groups where GroupId in ("+
+                                                    "select GroupId from"+  
+                                                    "("+
+                                                        "select * from User_Group_Relation where UserId in"+
+                                                        "("+
+                                                            "select UserId from Users where EmailId like '"+localJson['EmailId'] +"'"+ 
+                                                        ")"+
+                                                    ") as UserGroupsId"+
+                                                ")"+
+                                            ")as UserGroups where GroupName like '"+localJson['GroupName']+"'"+
+                                        ")"+
+                                    ")";
+                    connection.query(sqlQuery , function(err , rows){
+                        
+                         if (err)
+                        {
+                            response.end("no connection pool possible coz of error");
+                            return;
+                        }
 
+                        var result = "";
+                        for (var i = 0; i < rows.length; i++)
+                        {
+                            result += JSON.stringify(rows[i]);
+                            
+                        }
+                        console.log(JSON.stringify(rows));
+                        response.end(JSON.stringify(rows));
+                        return;
+                    });
+                     
+                });
+                return;
             }
 
             for (var i = 0; i < globalArray.length; i++)
