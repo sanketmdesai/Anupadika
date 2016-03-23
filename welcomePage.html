@@ -251,7 +251,7 @@
                     groupDropDown.appendChild(option);
                 }
                 
-                alert("update groups "+groupDropDown.selectedIndex + " "+groupDropDown.value);
+//                alert("update groups "+groupDropDown.selectedIndex + " "+groupDropDown.value);
                 var EmailIdInput = document.getElementById("userEmailId");
                 makeRequest("http://52.88.238.35:9000/fetchmembersofgroup", '{"EmailId":"'+ EmailIdInput.value +'","GroupName":"'+ groupDropDown.value +'"}', updateGroupMembers);
             }
